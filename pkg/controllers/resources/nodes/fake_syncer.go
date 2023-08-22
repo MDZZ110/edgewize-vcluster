@@ -30,11 +30,13 @@ var (
 func NewFakeSyncer(ctx *synccontext.RegisterContext, nodeService nodeservice.NodeServiceProvider) (syncer.Object, error) {
 	return &fakeNodeSyncer{
 		nodeServiceProvider: nodeService,
+		syncFakeNode:     ctx.Options.SyncFakeNodesInfo,
 	}, nil
 }
 
 type fakeNodeSyncer struct {
 	nodeServiceProvider nodeservice.NodeServiceProvider
+	syncFakeNode     bool
 }
 
 func (r *fakeNodeSyncer) Resource() client.Object {
@@ -65,6 +67,12 @@ func (r *fakeNodeSyncer) FakeSyncUp(ctx *synccontext.SyncContext, name types.Nam
 	} else if !yes {
 		return ctrl.Result{}, nil
 	}
+
+	if !r.syncFakeNode {
+		ctx.Log.Infof("Skip creating fake node %s", name.Name)
+		return ctrl.Result{}, nil
+	}
+
 	needed, err := r.nodeNeeded(ctx, name.Name)
 	if err != nil {
 		return ctrl.Result{}, err
@@ -86,6 +94,12 @@ func (r *fakeNodeSyncer) FakeSync(ctx *synccontext.SyncContext, vObj client.Obje
 	} else if !yes {
 		return ctrl.Result{}, nil
 	}
+
+	if !r.syncFakeNode {
+		ctx.Log.Infof("Skip syncing fake node %s", node.Name)
+		return ctrl.Result{}, nil
+	}
+
 	needed, err := r.nodeNeeded(ctx, node.Name)
 	if err != nil {
 		return ctrl.Result{}, err
